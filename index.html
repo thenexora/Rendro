@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rendro | Modern To-Do</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind Configuration & Custom Styles -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: {
+                        charcoal: '#0f172a',
+                        electric: '#0ea5e9',
+                        electricHover: '#0284c7',
+                        glass: 'rgba(255, 255, 255, 0.05)',
+                        glassBorder: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            background-image: radial-gradient(at 0% 0%, hsla(200,100%,20%,0.2) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, hsla(220,100%,15%,0.3) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #f1f5f9;
+        }
+        
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glassBorder);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .task-enter {
+            animation: slideDownFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .task-exit {
+            animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideDownFade {
+            0% { opacity: 0; transform: translateY(-15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUpFade {
+            0% { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(20px); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(14, 165, 233, 0.5); }
+        
+        .checkbox-custom:checked + div {
+            background-color: #0ea5e9;
+            border-color: #0ea5e9;
+        }
+        .checkbox-custom:checked + div svg {
+            display: block;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col overflow-x-hidden selection:bg-electric selection:text-white">
+
+    <!-- AUTHENTICATION VIEW -->
+    <div id="auth-view" class="flex-1 flex items-center justify-center p-6 z-10 transition-opacity duration-500">
+        <div class="glass-panel w-full max-w-md p-8 rounded-3xl relative overflow-hidden">
+            <!-- Decorative Glow inside card -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-electric rounded-full mix-blend-screen filter blur-[60px] opacity-30"></div>
+            
+            <div class="text-center mb-8 relative z-10">
+                <h1 class="text-4xl font-extrabold tracking-tight text-white mb-2">Rendro<span class="text-electric">.</span></h1>
+                <p id="auth-subtitle" class="text-gray-400 text-sm">Sign in to sync your tasks</p>
+            </div>
+
+            <form id="auth-form" class="space-y-4 relative z-10">
+                <div>
+                    <input type="email" id="email" required placeholder="Email Address" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-electric transition-all">
+                </div>
+                <div>
+                    <!-- Added minlength="6" to guide users on Firebase's minimum password requirement -->
+                    <input type="password" id="password" required minlength="6" placeholder="Password (min 6 chars)" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-electric transition-all">
+                </div>
+                
+                <!-- Error message container -->
+                <div id="auth-error" class="hidden bg-red-500/10 border border-red-500/50 text-red-400 text-xs text-center p-3 rounded-lg"></div>
+                
+                <button type="submit" id="auth-btn" class="w-full bg-electric hover:bg-electricHover text-white font-semibold py-3 rounded-xl transition-colors shadow-[0_0_15px_rgba(14,165,233,0.3)] flex justify-center items-center h-[50px]">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="mt-6 flex items-center justify-between relative z-10">
+                <span class="border-b border-white/10 w-1/5"></span>
+                <span class="text-xs text-gray-400 uppercase tracking-wider">Or continue with</span>
+                <span class="border-b border-white/10 w-1/5"></span>
+            </div>
+
+            <button id="google-btn" class="w-full mt-6 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium py-3 rounded-xl transition-all flex items-center justify-center gap-3 relative z-10">
+                <i class="fa-brands fa-google text-electric"></i> Google
+            </button>
+
+            <p class="mt-8 text-center text-sm text-gray-400 relative z-10">
+                <span id="toggle-auth-text">Don't have an account?</span> 
+                <a href="#" id="toggle-auth-btn" class="text-electric hover:text-white transition-colors font-medium">Sign Up</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboard-view" class="hidden flex-1 flex flex-col items-center py-10 px-4 sm:px-6 z-10 transition-opacity duration-500 opacity-0">
+        <div class="w-full max-w-2xl">
+            
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-3xl font-extrabold tracking-tight text-white">Rendro<span class="text-electric">.</span></h1>
+                <button id="logout-btn" class="text-gray-400 hover:text-white transition-colors flex items-center gap-2 text-sm bg-white/5 px-4 py-2 rounded-full border border-white/10">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+
+            <!-- Add Task Input -->
+            <form id="add-task-form" class="relative mb-8">
+                <input type="text" id="task-input" placeholder="What needs to be done?" autocomplete="off"
+                    class="w-full glass-panel rounded-2xl pl-5 pr-14 py-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-electric transition-all shadow-lg text-lg">
+                <button type="submit" class="absolute right-2 top-2 bottom-2 aspect-square bg-electric hover:bg-electricHover rounded-xl text-white flex items-center justify-center transition-colors shadow-md">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </form>
+
+            <!-- Filters -->
+            <div class="flex gap-2 mb-6" id="filters">
+                <button data-filter="all" class="filter-btn active px-4 py-1.5 rounded-full text-sm font-medium bg-electric text-white transition-all shadow-[0_0_10px_rgba(14,165,233,0.4)]">All</button>
+                <button data-filter="active" class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white/5 text-gray-400 hover:text-white transition-all">Active</button>
+                <button data-filter="completed" class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white/5 text-gray-400 hover:text-white transition-all">Completed</button>
+            </div>
+
+            <!-- Task List -->
+            <div class="glass-panel rounded-2xl p-2 min-h-[300px] flex flex-col">
+                <ul id="task-list" class="flex-1 overflow-y-auto max-h-[60vh] p-2 space-y-2">
+                    <!-- Tasks will be injected here -->
+                </ul>
+
+                <!-- Empty State (Hidden by default) -->
+                <div id="empty-state" class="hidden flex-1 flex flex-col items-center justify-center text-center p-8 opacity-60">
+                    <div class="text-6xl mb-4">✨</div>
+                    <h3 class="text-lg font-medium text-white mb-1">Relax!</h3>
+                    <p class="text-sm text-gray-400">Your list is entirely empty.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- FOOTER BRANDING -->
+    <div class="fixed bottom-4 right-6 z-50">
+        <a href="#" target="_blank" class="text-xs text-gray-500 hover:text-electric transition-colors flex items-center gap-1 group bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/5">
+            Powered by <span class="font-bold text-white tracking-wide group-hover:text-electric transition-colors">The Nexora</span>
+        </a>
+    </div>
+
+    <!-- Firebase & Application Logic -->
+    <script type="module">
+        // Import Firebase Modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { 
+            getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
+            GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut 
+        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { 
+            getFirestore, collection, addDoc, onSnapshot, 
+            query, orderBy, doc, updateDoc, deleteDoc 
+        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAtCeziLfHiGDTCxmECHEZXM-3RvynEdU0",
+            authDomain: "rendro-42a06.firebaseapp.com",
+            databaseURL: "https://rendro-42a06-default-rtdb.firebaseio.com",
+            projectId: "rendro-42a06",
+            storageBucket: "rendro-42a06.firebasestorage.app",
+            messagingSenderId: "1079471134597",
+            appId: "1:1079471134597:web:cc5cfcb0b893063cda56ec"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // State Management
+        let currentUser = null;
+        let isSignUpMode = false;
+        let tasks =[];
+        let currentFilter = 'all';
+        let unsubscribeTasks = null;
+
+        // DOM Elements
+        const authView = document.getElementById('auth-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        
+        // Auth Elements
+        const authForm = document.getElementById('auth-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const authBtn = document.getElementById('auth-btn');
+        const toggleAuthBtn = document.getElementById('toggle-auth-btn');
+        const toggleAuthText = document.getElementById('toggle-auth-text');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const googleBtn = document.getElementById('google-btn');
+        const authError = document.getElementById('auth-error');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // Dashboard Elements
+        const addTaskForm = document.getElementById('add-task-form');
+        const taskInput = document.getElementById('task-input');
+        const taskList = document.getElementById('task-list');
+        const emptyState = document.getElementById('empty-state');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+
+        // Helper: Show Error visually
+        function showError(message) {
+            authError.innerText = message;
+            authError.classList.remove('hidden');
+        }
+
+        // --- AUTHENTICATION LOGIC ---
+
+        // Toggle Login / Signup View
+        toggleAuthBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSignUpMode = !isSignUpMode;
+            authError.classList.add('hidden'); // Clear errors on toggle
+            
+            if (isSignUpMode) {
+                authBtn.innerText = 'Create Account';
+                toggleAuthText.innerText = 'Already have an account?';
+                toggleAuthBtn.innerText = 'Sign In';
+                authSubtitle.innerText = 'Create an account to start syncing';
+            } else {
+                authBtn.innerText = 'Sign In';
+                toggleAuthText.innerText = "Don't have an account?";
+                toggleAuthBtn.innerText = 'Sign Up';
+                authSubtitle.innerText = 'Sign in to sync your tasks';
+            }
+        });
+
+        // Email & Password Auth Submit
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.classList.add('hidden');
+            
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            // Show loading spinner
+            const originalBtnText = authBtn.innerText;
+            authBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i>';
+            authBtn.disabled = true;
+
+            try {
+                if (isSignUpMode) {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+                
+                // Provide readable error messages
+                let displayError = "An error occurred. Please try again.";
+                switch(error.code) {
+                    case 'auth/invalid-credential':
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                        displayError = "Invalid email or password.";
+                        break;
+                    case 'auth/email-already-in-use':
+                        displayError = "An account with this email already exists.";
+                        break;
+                    case 'auth/weak-password':
+                        displayError = "Password must be at least 6 characters long.";
+                        break;
+                    case 'auth/operation-not-allowed':
+                        displayError = "Email/Password login is not enabled in Firebase Console.";
+                        break;
+                    case 'auth/invalid-email':
+                        displayError = "Please enter a valid email address.";
+                        break;
+                    default:
+                        displayError = error.message.replace('Firebase:', '').trim();
+                }
+                showError(displayError);
+            } finally {
+                // Restore button state
+                authBtn.innerText = isSignUpMode ? 'Create Account' : 'Sign In';
+                authBtn.disabled = false;
+            }
+        });
+
+        // Google Auth
+        googleBtn.addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Google Auth Error:", error);
+                showError("Google Sign-In failed or was cancelled.");
+            }
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        // Auth State Observer
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                showDashboard();
+                loadTasks();
+            } else {
+                currentUser = null;
+                showAuth();
+                if(unsubscribeTasks) unsubscribeTasks();
+            }
+        });
+
+        // UI Transitions
+        function showDashboard() {
+            authView.style.opacity = '0';
+            setTimeout(() => {
+                authView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+                void dashboardView.offsetWidth; // Trigger reflow
+                dashboardView.classList.remove('opacity-0');
+                dashboardView.style.opacity = '1';
+            }, 500);
+        }
+
+        function showAuth() {
+            dashboardView.style.opacity = '0';
+            setTimeout(() => {
+                dashboardView.classList.add('hidden');
+                dashboardView.classList.add('opacity-0');
+                authView.classList.remove('hidden');
+                void authView.offsetWidth; // Trigger reflow
+                authView.style.opacity = '1';
+                
+                // Clear inputs
+                emailInput.value = '';
+                passwordInput.value = '';
+                authError.classList.add('hidden');
+            }, 500);
+        }
+
+        // --- DASHBOARD LOGIC ---
+
+        // Real-time task listener
+        function loadTasks() {
+            if (!currentUser) return;
+
+            const tasksRef = collection(db, `users/${currentUser.uid}/tasks`);
+            const q = query(tasksRef, orderBy('createdAt', 'desc'));
+
+            // The onSnapshot takes a 3rd parameter for error handling (crucial for Firestore rule issues)
+            unsubscribeTasks = onSnapshot(q, (snapshot) => {
+                tasks =[];
+                snapshot.forEach((doc) => {
+                    tasks.push({ id: doc.id, ...doc.data() });
+                });
+                renderTasks();
+            }, (error) => {
+                console.error("Firestore Error:", error);
+                if (error.code === 'permission-denied') {
+                    alert("⚠️ Firestore Security Rules are blocking access. You need to update your rules in the Firebase Console to allow read/write access.");
+                }
+            });
+        }
+
+        // Add Task
+        addTaskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = taskInput.value.trim();
+            if (!text) return;
+
+            taskInput.value = '';
+            try {
+                await addDoc(collection(db, `users/${currentUser.uid}/tasks`), {
+                    text,
+                    completed: false,
+                    createdAt: Date.now()
+                });
+            } catch (error) {
+                console.error("Error adding task:", error);
+                alert("Failed to add task. Check console for details.");
+            }
+        });
+
+        // Task Interaction (Delegation for Delete & Toggle)
+        taskList.addEventListener('click', async (e) => {
+            const li = e.target.closest('li');
+            if (!li) return;
+            const id = li.dataset.id;
+
+            // Delete Task
+            if (e.target.closest('.delete-btn')) {
+                li.classList.add('task-exit'); 
+                setTimeout(async () => {
+                    try { await deleteDoc(doc(db, `users/${currentUser.uid}/tasks`, id)); } 
+                    catch (error) { console.error("Error deleting:", error); }
+                }, 300);
+            } 
+            // Toggle Completion
+            else if (e.target.closest('.toggle-btn')) {
+                const isCompleted = li.dataset.completed === 'true';
+                try {
+                    await updateDoc(doc(db, `users/${cu
